@@ -1,0 +1,55 @@
+name: Diagnostic Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  APP_ENV: ${{ vars.APP_ENV }}
+  API_KEY: ${{ secrets.API_KEY }}
+
+jobs:
+  diagnostic:
+    name: Diagnóstico de Variáveis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checa APP_ENV
+        id: check_app_env
+        run: |
+          if [ -z "$APP_ENV" ]; then
+            echo "::error::Variável APP_ENV indefinida"
+            echo "app_env_result=missing" >> $GITHUB_OUTPUT
+          else
+            echo "::notice::APP_ENV está definida como '$APP_ENV'"
+            echo "app_env_result=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checa API_KEY
+        id: check_api_key
+        run: |
+          if [ -z "$API_KEY" ]; then
+            echo "::error::Variável API_KEY indefinida"
+            echo "api_key_result=missing" >> $GITHUB_OUTPUT
+          else
+            echo "::notice::API_KEY encontrada"
+            echo "api_key_result=ok" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Gera resumo
+        if: always()
+        run: |
+          echo "## Resumo" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.check_app_env.outputs.app_env_result }}" = "missing" ]; then
+            echo "- **APP_ENV** ausente." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- APP_ENV = `$APP_ENV`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ steps.check_api_key.outputs.api_key_result }}" = "missing" ]; then
+            echo "- **API_KEY** ausente." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- API_KEY presente." >> $GITHUB_STEP_SUMMARY
+          fi
